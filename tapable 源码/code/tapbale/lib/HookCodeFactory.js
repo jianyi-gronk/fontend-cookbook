@@ -7,23 +7,29 @@
 /**
  * HookCodeFactory 的核心是 create 方法
  * 根据当前 taps 和 interceptors 的实际情况，动态生成一段函数代码字符串
- * 然后用 new Function() 把它变成一个真正的函数
- * 例如传统写法，每次调用都需要循环便利 taps 数组
+ * 然后用 new Function() 把字符串转换成函数
+ * 例如传统写法，每次调用都需要循环遍历 taps 数组，或者需要做一些逻辑判断
  * 	funcation(...args) {
  * 		...
  * 		for (const tap of taps) {
  * 			const fn = tap.fn;
  * 			fn(...args);  // 或处理 async/promise
+ * 			if (tap.type === "sync") {
+ * 				console.log(tap.name, "is sync");
+ * 			}
  * 		}
  * 	}
  *
- * 而动态生成函数代码字符串，则可以避免每次调用时便利 taps 数组
+ * 而动态生成函数代码字符串，则可以避免每次调用时遍历数组和一些逻辑判断
  *  function() {
- * 		...
+ *  	...
  *  	var _x = taps;  // 插件函数数组
  *  	_x[0](arg1, arg2);
  *  	_x[1](arg1, arg2);
  *  	const result = _x[2](arg1, arg2);
+ *
+ *  	// 可以直接生成函数前判断，如果是 sync 类型，则加这段代码，否则不加
+ *  	console.log(tap.name, "is sync");
  *  	return result;
  *  }
  */
@@ -34,6 +40,16 @@ class HookCodeFactory {
 		this._args = undefined;
 	}
 
+	/**
+	 * 核心是用 new Function() 生成函数
+	 * new Function([arg1, arg2, ...], functionBody)
+	 *	arg1, arg2, ... 是函数的参数列表，对应 hooks 注册时传入的参数
+	 *	functionBody 是函数的主体代码，是一个字符串
+	 * 例如创建一个接受两个参数并返回它们之和的函数
+	 * 	let add = new Function('a', 'b', 'return a + b;');
+	 * 	let result = add(5, 3);
+	 * 	console.log(result); // 输出: 8
+	 */
 	create(options) {
 		this.init(options);
 		let fn;
@@ -99,6 +115,9 @@ class HookCodeFactory {
 		return fn;
 	}
 
+	/**
+	 * 将所有注册事件的 fn 放到 _x 数组中
+	 */
 	setup(instance, options) {
 		instance._x = options.taps.map((t) => t.fn);
 	}

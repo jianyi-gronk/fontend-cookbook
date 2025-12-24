@@ -17,8 +17,8 @@ const deprecateContext = util.deprecate(
 
 /**
  * 该函数同时包含 编译 和 执行
- * 作用是 延迟编译，直到第一次调用 call 方法时才执行 compile 方法编译具体执行逻辑
- * 如果修改了 拦截器 或 注册插件，需要重新编译 call 函数
+ * 作用是 延迟编译，第一次触发 call 的时候，会用 _createCall 编译后的函数覆盖原本的 call 方法
+ * 后续调用 call 方法，就会直接执行编译后的函数，而不会再进入重新编译函数
  */
 function CALL_DELEGATE(...args) {
 	this.call = this._createCall("sync");
@@ -53,8 +53,11 @@ class Hook {
 
 		/**
 		 * 声明两次的原因是
-		 * 1. 带下划线声明：原始默认实现，不会被改变
-		 * 2. 不带下划线声明：实际对外暴露的触发方法
+		 * 1. 带下划线声明
+		 *    原始默认实现，不会被改变，用于修改 拦截器 或 注册插件 后，用 _call 覆盖 call 方法
+		 *    然后第一次执行 call 的时候，会再次基于最新的 拦截器 和 注册插件 进行编译
+		 * 2. 不带下划线声明
+		 *    实际对外暴露的触发方法，触发的第一次会被更改成 _createCall 编译后的函数
 		 */
 		this._call = CALL_DELEGATE;
 		this.call = CALL_DELEGATE;
@@ -63,6 +66,9 @@ class Hook {
 		this._promise = PROMISE_DELEGATE;
 		this.promise = PROMISE_DELEGATE;
 
+		/**
+		 * 内部使用的数组，用于存储所有注册事件的 fn
+		 */
 		this._x = undefined;
 
 		/**
@@ -88,7 +94,7 @@ class Hook {
 	}
 
 	/*
-	 * 调用子类的 compile 方法生成真正的执行函数
+	 * 本身并没有实现 compile，需要调用子类的 compile 方法生成真正的执行函数
 	 */
 	_createCall(type) {
 		return this.compile({
