@@ -116,7 +116,7 @@ class HookCodeFactory {
 	}
 
 	/**
-	 * 将所有注册事件的 fn 放到 _x 数组中
+	 * 将所有注册事件的 fn 放到 _x 数组中，后续要触发所有订阅事件回调，只需要按顺序执行 _x 即可
 	 */
 	setup(instance, options) {
 		instance._x = options.taps.map((t) => t.fn);
