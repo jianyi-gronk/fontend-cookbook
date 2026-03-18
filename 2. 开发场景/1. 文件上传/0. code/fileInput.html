@@ -1,0 +1,8 @@
+<input type="file" id="fileInput">
+<script>
+  const fileInput = document.getElementById('fileInput');
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    console.log(file);
+  })
+</script>
